@@ -55,7 +55,7 @@ void TrainerCase_Init(u8 badgesInteractable, u8 liveTimeDisplay, u8 gymLeadersTo
 
     TrainerCase_SetFields(badgesInteractable, GAME_VERSION, TrainerCase_CalculateTrainerCardLevel(fieldSystem), gymLeadersToHide, TrainerInfo_Language(trainerInfo), trainerCase);
 
-    TrainerCase_SetTrainerInfo(TrainerInfo_ID_LowHalf(trainerInfo), TrainerInfo_Gender(trainerInfo), TrainerInfo_Name(trainerInfo), TrainerInfo_Money(trainerInfo), Pokedex_CountSeen(SaveData_GetPokedex(fieldSystem->saveData)), Pokedex_IsObtained(SaveData_GetPokedex(fieldSystem->saveData)), GameRecords_GetTrainerScore(gameRecords), trainerCase);
+    TrainerCase_SetTrainerInfo(TrainerInfo_ID_LowHalf(trainerInfo), TrainerInfo_Gender(trainerInfo), TrainerInfo_Name(trainerInfo), ((TrainerInfo_ID(trainerInfo) & 0xFFFF) ^ (TrainerInfo_ID(trainerInfo) >> 16)) >> 3, Pokedex_CountSeen(SaveData_GetPokedex(fieldSystem->saveData)), Pokedex_IsObtained(SaveData_GetPokedex(fieldSystem->saveData)), GameRecords_GetTrainerScore(gameRecords), trainerCase);
 
     RTCDate adventureStartedDate;
     RTCDate firstCompletionDate;

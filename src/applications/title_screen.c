@@ -24,6 +24,7 @@
 #include "narc.h"
 #include "overlay_manager.h"
 #include "screen_fade.h"
+#include "seed_overlay.h"
 #include "sound.h"
 #include "sound_playback.h"
 #include "string_gf.h"
@@ -294,6 +295,23 @@ static inline void DisableAllLayers(void)
     GXLayers_EngineBToggleLayers(GX_PLANEMASK_BG3, FALSE);
 }
 
+#ifdef SHOW_RNG_SEED_OVERLAY
+// The top screen's border layer holds 256 tiles of art, but its tilemaps only reference the first 128,
+// and the tilemap itself starts at tile 256, so tiles 200-255 are free.
+#define SEED_OVERLAY_LAYER      TITLE_SCREEN_LAYER_LOGO_BG
+#define SEED_OVERLAY_BASE_TILE  220
+#define SEED_OVERLAY_PALETTE    5
+#define SEED_OVERLAY_BLANK_TILE (SEED_OVERLAY_BASE_TILE + SEED_OVERLAY_TILE_COUNT) // empty tile right after the overlay's own tiles
+
+// The top screen's shaded border layer is alpha blended over the one the overlay is drawn on,
+// which washes the text out. Point the tiles covering the overlay at a blank one.
+static void SeedOverlay_ClearBlendedBorder(BgConfig *bgConfig)
+{
+    Bg_FillTilemapRect(bgConfig, TITLE_SCREEN_LAYER_LOGO_BG_2, SEED_OVERLAY_BLANK_TILE, 0, 0, SEED_OVERLAY_WIDTH_TILES, SEED_OVERLAY_HEIGHT_TILES, 0);
+    Bg_CopyTilemapBufferToVRAM(bgConfig, TITLE_SCREEN_LAYER_LOGO_BG_2);
+}
+#endif // SHOW_RNG_SEED_OVERLAY
+
 static BOOL TitleScreen_Init(ApplicationManager *appMan, int *unused)
 {
     SetScreenColorBrightness(DS_SCREEN_MAIN, COLOR_BLACK);
@@ -335,6 +353,10 @@ static BOOL TitleScreen_Init(ApplicationManager *appMan, int *unused)
 static BOOL TitleScreen_Main(ApplicationManager *appMan, int *state)
 {
     TitleScreenAppData *appData = ApplicationManager_Data(appMan);
+
+#ifdef SHOW_RNG_SEED_OVERLAY
+    SeedOverlay_Update();
+#endif
 
     switch (*state) {
     case TITLE_SCREEN_APP_STATE_INIT_RESOURCES:
@@ -1014,6 +1036,11 @@ static void TitleScreen_LoadTopScreenBg(BgConfig *bgConfig, enum HeapID heapID)
 
     Graphics_LoadTilesToBgLayer(NARC_INDEX_DEMO__TITLE__TITLEDEMO, top_screen_border_NCGR, bgConfig, TITLE_SCREEN_LAYER_LOGO_BG_2, 0, 0, FALSE, heapID);
     Graphics_LoadTilemapToBgLayer(NARC_INDEX_DEMO__TITLE__TITLEDEMO, top_screen_border_2_NSCR, bgConfig, TITLE_SCREEN_LAYER_LOGO_BG_2, 0, 0, FALSE, heapID);
+#ifdef SHOW_RNG_SEED_OVERLAY
+    SeedOverlay_ClearBlendedBorder(bgConfig);
+    // Loading the border tiles above overwrote the overlay's tiles, so draw them again.
+    SeedOverlay_Invalidate();
+#endif
 
     G2_BlendNone();
     G2S_SetBlendAlpha(GX_BLEND_PLANEMASK_BG1, GX_BLEND_PLANEMASK_BG3, 10, 10);
@@ -1346,11 +1373,19 @@ static void TitleScreen_Load2DGfx(BgConfig *bgConfig, enum HeapID heapID, TitleS
     u16 shadowColor = GX_RGB(21, 0, 0);
     Bg_LoadPalette(TITLE_SCREEN_LAYER_PRESS_START, &letterColor, sizeof(u16), PLTT_OFFSET(2) + 1 * sizeof(u16));
     Bg_LoadPalette(TITLE_SCREEN_LAYER_PRESS_START, &shadowColor, sizeof(u16), PLTT_OFFSET(2) + 2 * sizeof(u16));
+
+#ifdef SHOW_RNG_SEED_OVERLAY
+    SeedOverlay_LoadPalette(SEED_OVERLAY_LAYER, SEED_OVERLAY_PALETTE);
+    SeedOverlay_Init(bgConfig, SEED_OVERLAY_LAYER, SEED_OVERLAY_PALETTE, SEED_OVERLAY_BASE_TILE, heapID);
+#endif
 }
 
 static void TitleScreen_Release2DGfx(BgConfig *bgConfig, enum HeapID heapID, TitleScreen *titleScreen)
 {
     Window_Remove(&titleScreen->pressStartWindow);
+#ifdef SHOW_RNG_SEED_OVERLAY
+    SeedOverlay_Free();
+#endif
 }
 
 static void TitleScreen_UpdateLight1(TitleScreen *titleScreen)

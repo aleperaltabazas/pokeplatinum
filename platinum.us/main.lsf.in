@@ -76,6 +76,7 @@ Static main
 	Object src/gfx_box_test.c
 	Object src/charcode.c
 	Object src/math_util.c
+	Object src/seed_overlay.c
 	Object src/text.c
 	Object src/vram_transfer.c
 	Object src/cell_transfer.c

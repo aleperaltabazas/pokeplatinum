@@ -37,6 +37,7 @@
 #include "save_player.h"
 #include "savedata.h"
 #include "screen_fade.h"
+#include "seed_overlay.h"
 #include "sound.h"
 #include "sound_playback.h"
 #include "sprite.h"
@@ -69,6 +70,7 @@ FS_EXTERN_OVERLAY(overlay98);
 #define OPTION_WINDOWS_BASE_TILE_START   (FOCUSED_OPTION_FRAME_BASE_TILE + STANDARD_WINDOW_TILE_COUNT)
 #define ALERT_WINDOW_FRAME_BASE_TILE     1
 #define ALERT_WINDOW_CONTENT_BASE_TILE   (ALERT_WINDOW_FRAME_BASE_TILE + 2 * STANDARD_WINDOW_TILE_COUNT)
+#define SEED_OVERLAY_PALETTE             6
 
 #define WIRELESS_ICONS_TILES_OFFS     0x380
 #define WIRELESS_ICONS_TILES_ID_START ((4 << 12) + WIRELESS_ICONS_TILES_OFFS)
@@ -620,6 +622,13 @@ static void InitMainMenuGraphics(MainMenuAppData *appData)
     LoadStandardWindowGraphics(appData->bgConfig, BG_LAYER_MAIN_0, FOCUSED_OPTION_FRAME_BASE_TILE, 3, STANDARD_WINDOW_FIELD, HEAP_ID_MAIN_MENU);
 
     *HW_BG_A_PLTT_COLOR(2, 1) = UNFOCUSED_OPTION_BG_COLOR;
+
+#ifdef SHOW_RNG_SEED_OVERLAY
+    // BG3 is unused here, and its screen and character blocks sit in free VRAM.
+    MainMenuUtil_InitBGLayer(appData->bgConfig, BG_LAYER_MAIN_3, BG_SCREEN_SIZE_256x256, GX_BG_SCRBASE_0xd000 * 0x800, GX_BG_CHARBASE_0x10000 * 0x4000);
+    SeedOverlay_LoadPalette(BG_LAYER_MAIN_3, SEED_OVERLAY_PALETTE);
+    SeedOverlay_Init(appData->bgConfig, BG_LAYER_MAIN_3, SEED_OVERLAY_PALETTE, 1, HEAP_ID_MAIN_MENU);
+#endif
 }
 
 static void LoadScrollArrowsSprites(MainMenuAppData *appData)
@@ -1049,6 +1058,10 @@ static void FreeApplicationResources(ApplicationManager *appMan)
     Bg_FreeTilemapBuffer(appData->bgConfig, BG_LAYER_MAIN_0);
     Bg_FreeTilemapBuffer(appData->bgConfig, BG_LAYER_MAIN_1);
     Bg_FreeTilemapBuffer(appData->bgConfig, BG_LAYER_MAIN_2);
+#ifdef SHOW_RNG_SEED_OVERLAY
+    SeedOverlay_Free();
+    Bg_FreeTilemapBuffer(appData->bgConfig, BG_LAYER_MAIN_3);
+#endif
     Heap_Free(appData->bgConfig);
     SetVBlankCallback(NULL, NULL);
 }
@@ -1149,6 +1162,10 @@ static BOOL MainMenu_Main(ApplicationManager *appMan, int *state)
 
     appData->framesCounter++;
     CTRDG_IsExisting();
+
+#ifdef SHOW_RNG_SEED_OVERLAY
+    SeedOverlay_Update();
+#endif
 
     if (ShowAlerts(appData) == TRUE) {
         DetectWirelessConnections(appData);

@@ -7,6 +7,7 @@
 #include "constants/field/field_effect_renderer.h"
 #include "constants/field/map.h"
 #include "constants/field/map_load.h"
+#include "constants/field/window.h"
 #include "constants/heap.h"
 
 #include "field/field_system.h"
@@ -75,6 +76,7 @@
 #include "savedata_misc.h"
 #include "screen_fade.h"
 #include "script_manager.h"
+#include "seed_overlay.h"
 #include "system.h"
 #include "unk_0202419C.h"
 #include "unk_020559DC.h"
@@ -124,6 +126,10 @@ static MapObjectsToPreload *FetchMapObjectsToPreload(enum HeapID heapID, int mem
 static const int *MapObjectsToPreload_GetIDs(const MapObjectsToPreload *mapObjectsToPreload);
 static int MapObjectsToPreload_GetCount(const MapObjectsToPreload *mapObjectsToPreload);
 static void MapObjectsToPreload_Free(MapObjectsToPreload *mapObjectsToPreload);
+
+#ifdef SHOW_RNG_SEED_OVERLAY
+#define SEED_OVERLAY_BASE_TILE 1
+#endif
 
 static inline void inline_fieldmap(FieldSystem *fieldSystem)
 {
@@ -255,6 +261,9 @@ static BOOL FieldMap_Main(ApplicationManager *appMan, int *param1)
     }
 
     ov5_021D134C(fieldSystem, fieldSystem->unk_C0);
+#ifdef SHOW_RNG_SEED_OVERLAY
+    SeedOverlay_Update();
+#endif
 
     if (fieldSystem->runningFieldMap) {
         return FALSE;
@@ -313,6 +322,9 @@ static BOOL FieldMap_Exit(ApplicationManager *appMan, int *param1)
             AreaLightManager_Free(&fieldSystem->areaLightMan);
             Signpost_Free(fieldSystem->signpost);
             MapNamePopUp_Destroy(fieldSystem->unk_04->mapPopup);
+#ifdef SHOW_RNG_SEED_OVERLAY
+            SeedOverlay_Free();
+#endif
 
             if (fieldSystem->unk_04->unk_0C != NULL) {
                 ov5_021D5EF8(fieldSystem->unk_04->unk_0C);
@@ -883,6 +895,11 @@ static void ov5_021D1968(FieldSystem *fieldSystem)
     }
 
     fieldSystem->unk_04->mapPopup = MapNamePopUp_Create(fieldSystem->bgConfig);
+#ifdef SHOW_RNG_SEED_OVERLAY
+    // BG1 is unused in the field. Raise it above the other 2D layers so nothing covers the overlay.
+    Bg_SetPriority(BG_LAYER_MAIN_1, 0);
+    SeedOverlay_Init(fieldSystem->bgConfig, BG_LAYER_MAIN_1, FIELD_MESSAGE_PALETTE_INDEX, SEED_OVERLAY_BASE_TILE, HEAP_ID_FIELD1);
+#endif
     fieldSystem->signpost = Signpost_Init(HEAP_ID_FIELD1);
     fieldSystem->unk_04->unk_10 = TextureResourceManager_Create();
 

@@ -1,0 +1,14 @@
+# Build the ROM and drop it in ./out:
+#   docker compose run --rm rom
+# Rev 1 instead of Rev 0:
+#   ROM_REVISION=1 docker compose run --rm rom
+services:
+  rom:
+    build:
+      context: .
+      target: build
+      args:
+        ROM_REVISION: ${ROM_REVISION:-0}
+    volumes:
+      - ./out:/out
+    command: cp build/pokeplatinum.us.nds /out/

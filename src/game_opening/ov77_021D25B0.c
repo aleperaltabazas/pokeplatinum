@@ -27,6 +27,7 @@
 #include "particle_system.h"
 #include "render_oam.h"
 #include "screen_fade.h"
+#include "seed_overlay.h"
 #include "sound.h"
 #include "sys_task.h"
 #include "sys_task_manager.h"
@@ -994,6 +995,40 @@ static int ov77_021D2E60(ApplicationManager *appMan, int *param1)
     return 1;
 }
 
+#ifdef SHOW_RNG_SEED_OVERLAY
+// The credits run on the main engine's BG0, which is unused here.
+#define SEED_OVERLAY_PALETTE   6
+#define SEED_OVERLAY_BASE_TILE 1
+
+static void ShowSeedOverlay(UnkStruct_ov77_021D2E9C *param0)
+{
+    BgTemplate bgTemplate = {
+        .x = 0,
+        .y = 0,
+        .bufferSize = 0x800,
+        .baseTile = 0,
+        .screenSize = BG_SCREEN_SIZE_256x256,
+        .colorMode = GX_BG_COLORMODE_16,
+        .screenBase = GX_BG_SCRBASE_0x1800,
+        .charBase = GX_BG_CHARBASE_0x10000,
+        .bgExtPltt = GX_BG_EXTPLTT_01,
+        .priority = 0,
+        .areaOver = 0,
+        .mosaic = FALSE,
+    };
+
+    Bg_InitFromTemplate(param0->unk_0C, BG_LAYER_MAIN_0, &bgTemplate, 0);
+    Bg_ClearTilemap(param0->unk_0C, BG_LAYER_MAIN_0);
+
+    SeedOverlay_LoadPalette(BG_LAYER_MAIN_0, SEED_OVERLAY_PALETTE);
+    SeedOverlay_Init(param0->unk_0C, BG_LAYER_MAIN_0, SEED_OVERLAY_PALETTE, SEED_OVERLAY_BASE_TILE, param0->heapID);
+
+    // The opening zeroes the LCRNG while it runs, and this scene doesn't run scheduled BG updates.
+    // Show the seed saved when the opening started instead, and draw it straight away.
+    SeedOverlay_Draw(param0->unk_14);
+}
+#endif // SHOW_RNG_SEED_OVERLAY
+
 static BOOL ov77_021D2E9C(UnkStruct_ov77_021D2E9C *param0)
 {
     u8 *v0 = &(param0->unk_18.unk_00);
@@ -1009,6 +1044,9 @@ static BOOL ov77_021D2E9C(UnkStruct_ov77_021D2E9C *param0)
         break;
     case 1:
         ov77_021D2F38(&param0->unk_18);
+#ifdef SHOW_RNG_SEED_OVERLAY
+        ShowSeedOverlay(param0);
+#endif
         (*v0)++;
         break;
     case 2:
@@ -1145,6 +1183,10 @@ static void ov77_021D3234(UnkStruct_ov77_021D2E9C *param0)
     if (param0->unk_18.unk_02) {
         ov77_021D67B0(param0->unk_18.unk_14);
 
+#ifdef SHOW_RNG_SEED_OVERLAY
+        SeedOverlay_Free();
+        Bg_FreeTilemapBuffer(param0->unk_0C, BG_LAYER_MAIN_0);
+#endif
         Bg_FreeTilemapBuffer(param0->unk_0C, BG_LAYER_MAIN_1);
         Bg_FreeTilemapBuffer(param0->unk_0C, BG_LAYER_MAIN_2);
         Bg_FreeTilemapBuffer(param0->unk_0C, BG_LAYER_SUB_2);

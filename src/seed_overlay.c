@@ -42,16 +42,8 @@ void SeedOverlay_LoadPalette(enum BgLayer bgLayer, u8 palette)
     Bg_LoadPalette(bgLayer, (void *)colors, sizeof(colors), PLTT_OFFSET(palette));
 }
 
-void SeedOverlay_Update(void)
+static void Render(u32 seed)
 {
-    u32 seed = LCRNG_GetSeed();
-
-    if (!sActive || (seed == sShownSeed && !sInvalidated)) {
-        return;
-    }
-
-    sInvalidated = FALSE;
-
     String_Clear(sString);
 
     for (int shift = 28; shift >= 0; shift -= 4) {
@@ -61,8 +53,31 @@ void SeedOverlay_Update(void)
 
     Window_FillTilemap(&sWindow, SEED_OVERLAY_COLOR_BG);
     Text_AddPrinterWithParamsAndColor(&sWindow, FONT_SYSTEM, sString, 0, 0, TEXT_SPEED_INSTANT, TEXT_COLOR(1, 2, SEED_OVERLAY_COLOR_BG), NULL);
-    Window_ScheduleCopyToVRAM(&sWindow);
     sShownSeed = seed;
+}
+
+void SeedOverlay_Update(void)
+{
+    u32 seed = LCRNG_GetSeed();
+
+    if (!sActive || (seed == sShownSeed && !sInvalidated)) {
+        return;
+    }
+
+    sInvalidated = FALSE;
+    Render(seed);
+    Window_ScheduleCopyToVRAM(&sWindow);
+}
+
+void SeedOverlay_Draw(u32 value)
+{
+    if (!sActive) {
+        return;
+    }
+
+    sInvalidated = FALSE;
+    Render(value);
+    Window_CopyToVRAM(&sWindow);
 }
 
 void SeedOverlay_Invalidate(void)

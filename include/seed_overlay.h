@@ -32,6 +32,13 @@ void SeedOverlay_LoadPalette(enum BgLayer bgLayer, u8 palette);
 void SeedOverlay_Update(void);
 
 /**
+ * @brief Draw an arbitrary value right away, without waiting for VBlank.
+ *
+ * For screens that don't run scheduled BG updates, or that hide the real seed.
+ */
+void SeedOverlay_Draw(u32 value);
+
+/**
  * @brief Force a full redraw on the next update. Use after something else overwrites the overlay's tiles.
  */
 void SeedOverlay_Invalidate(void);

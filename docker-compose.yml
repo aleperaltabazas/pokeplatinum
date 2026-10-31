@@ -2,6 +2,8 @@
 #   docker compose run --rm rom
 # Rev 1 instead of Rev 0:
 #   ROM_REVISION=1 docker compose run --rm rom
+# Custom output name:
+#   ROM_NAME=my-custom-name.nds docker compose run --rm rom
 services:
   rom:
     build:
@@ -11,4 +13,6 @@ services:
         ROM_REVISION: ${ROM_REVISION:-0}
     volumes:
       - ./out:/out
-    command: cp build/pokeplatinum.us.nds /out/
+    environment:
+      ROM_NAME: ${ROM_NAME:-pokeplatinum.us.nds}
+    command: ["sh", "-c", 'cp build/pokeplatinum.us.nds "/out/$$ROM_NAME"']

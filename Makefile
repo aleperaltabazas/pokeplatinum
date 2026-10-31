@@ -172,3 +172,6 @@ skrewup: skrewrm skrew
 
 $(SKREW_EXE):
 	SKREW_SYS=$(SKREW_SYS) SKREW_VER=$(SKREW_VER) SKREW_DIR=$(SKREW_DIR) $(SKREW_GET)
+
+build-nds:
+	docker compose run --build --rm rom
